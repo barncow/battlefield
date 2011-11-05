@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster
-var numTests = 9+36+13+3, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 5 banlist
+var numTests = 9+36+13+3+5, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -34,9 +34,9 @@ publicClient.version(function(err, v) {
     info.roundsTotal.should.be.ok;
     info.scores.should.be.ok;
     info.scores.scores.should.be.ok;
-    info.scores.scores.length.should.be.above(0);
+    info.scores.scores.length.should.be.above(0, 'serverInfo.scores.scores.length');
     info.scores.targetScore.should.be.above(-1);
-    info.onlineState.should.eql('');
+    info.onlineState.should.eql(''); //todo when the scores was empty, this was 'true'
     info.ranked.should.be.ok;
     info.punkBuster.should.be.ok;
     info.hasGamePassword.should.not.be.ok;
@@ -257,12 +257,41 @@ function doPunkBusterTests(privateClient) {
       ++numComplete;
 
       //not sure if this does anything, but OK is returned...
-      privateClient.punkBuster.pb_sv_command("PB_SV_Ver", function(err) {
+      privateClient.punkBuster.pb_sv_command("pb_sv_plist", function(err, words) { //this gives data in procon
         should.not.exist(err);
         ++numComplete;
 
-        numComplete.should.equal(numTests);
-        privateClient.quit();
+        doBanListTests(privateClient);
+      });
+    });
+  });
+}
+
+function doBanListTests(privateClient) {
+  privateClient.banList.save(function(err) { //have to do save first so we have somthing to load
+    should.not.exist(err, 'banList save '+err);
+    ++numComplete;
+
+    privateClient.banList.load(function(err) {
+      should.not.exist(err, 'banlist load '+err);
+      ++numComplete;
+
+      privateClient.banList.add.ip('127.0.0.1').perm('no reason at all', function(err) {
+        should.not.exist(err, 'banlist add ip perm '+err);
+        ++numComplete;
+
+        privateClient.banList.add.name('asdf').seconds(10, function(err) {
+          should.not.exist(err, 'banlist add name round null reason '+err);
+          ++numComplete;
+
+          privateClient.banList.add.guid('1234').seconds(10, function(err) {
+            should.not.exist(err, 'banlist add guid round null reason '+err);
+            ++numComplete;
+
+            numComplete.should.equal(numTests);
+            privateClient.quit();
+          });
+        });
       });
     });
   });
