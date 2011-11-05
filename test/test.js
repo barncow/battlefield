@@ -4,18 +4,18 @@ var conf = require('./testconfig.json')
   , privateClient = bf.connect('BF3', conf.private.ip, conf.private.port, conf.private.pass)
   , should = require('should');
 
-publicClient.on('error', function(err) {console.error('PUBLICERROR', err);});
+publicClient.on('error', function(err) {console.error('PUBLICERROR', err);publicClient.quit();});
 publicClient.on('close', function() {
   console.log('public client disconnected');
 });
-privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);});
+privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);privateClient.quit();});
 privateClient.on('close', function() {
   console.log('private client disconnected');
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 4 admin tests, 3 punkBuster
-var numTests = 9+36+4+3, numComplete = 0;
+//9 tests, with 36 vars command tests, 7 admin tests, 3 punkBuster
+var numTests = 9+36+7+3, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -192,7 +192,22 @@ function doAdminTests(privateClient) {
         //undefMethods.should.eql([]); //todo uncomment when we think we are done.
         ++numComplete;
 
-        doPunkBusterTests(privateClient);
+        privateClient.admin.say.all('blah', function(err) {
+          should.not.exist(err);
+          ++numComplete;
+
+          privateClient.admin.say.team(1, 'blah', function(err) {
+            should.not.exist(err);
+            ++numComplete;
+            
+            privateClient.admin.say.squad(1, 1, 'blah', function(err) {
+              should.not.exist(err);
+              ++numComplete;
+              
+              doPunkBusterTests(privateClient);
+            });
+          });
+        });
       });
     });
   });
