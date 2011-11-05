@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 5 banlist
-var numTests = 9+36+13+3+5, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 9 banlist
+var numTests = 9+36+13+3+9, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -268,6 +268,7 @@ function doPunkBusterTests(privateClient) {
 }
 
 function doBanListTests(privateClient) {
+  var BAN_IP = '127.0.0.1', BAN_NAME = 'asdf', BAN_GUID = '1234';
   privateClient.banList.save(function(err) { //have to do save first so we have somthing to load
     should.not.exist(err, 'banList save '+err);
     ++numComplete;
@@ -276,20 +277,40 @@ function doBanListTests(privateClient) {
       should.not.exist(err, 'banlist load '+err);
       ++numComplete;
 
-      privateClient.banList.add.ip('127.0.0.1').perm('no reason at all', function(err) {
+      privateClient.banList.add.ip(BAN_IP).perm('no reason at all', function(err) {
         should.not.exist(err, 'banlist add ip perm '+err);
         ++numComplete;
 
-        privateClient.banList.add.name('asdf').seconds(10, function(err) {
-          should.not.exist(err, 'banlist add name round null reason '+err);
+        privateClient.banList.add.name(BAN_NAME).seconds(10, function(err) {
+          should.not.exist(err, 'banlist add name seconds null reason '+err);
           ++numComplete;
 
-          privateClient.banList.add.guid('1234').seconds(10, function(err) {
-            should.not.exist(err, 'banlist add guid round null reason '+err);
+          privateClient.banList.add.guid(BAN_GUID).seconds(10, function(err) {
+            should.not.exist(err, 'banlist add guid seconds null reason '+err);
             ++numComplete;
 
-            numComplete.should.equal(numTests);
-            privateClient.quit();
+            privateClient.banList.remove.ip(BAN_IP, function(err) {
+              should.not.exist(err, 'banlist remove ip '+err);
+              ++numComplete;
+
+              privateClient.banList.remove.name(BAN_NAME, function(err) {
+                should.not.exist(err, 'banlist remove name '+err);
+                ++numComplete;
+
+                privateClient.banList.remove.guid(BAN_GUID, function(err) {
+                  should.not.exist(err, 'banlist remove guid '+err);
+                  ++numComplete;
+
+                  privateClient.banList.clear(function(err) {
+                    should.not.exist(err, 'banlist clear '+err);
+                    ++numComplete;
+
+                    numComplete.should.equal(numTests);
+                    privateClient.quit();
+                  });
+                });
+              });
+            });
           });
         });
       });
