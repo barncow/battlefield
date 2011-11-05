@@ -11,11 +11,11 @@ publicClient.on('close', function() {
 privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);});
 privateClient.on('close', function() {
   console.log('private client disconnected');
-  console.log('completed tests:', numComplete);
+  console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 4 admin tests
-var numTests = 9+36+4, numComplete = 0;
+//9 tests, with 36 vars command tests, 4 admin tests, 3 punkBuster
+var numTests = 9+36+4+3, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -134,56 +134,7 @@ privateClient.vars.serverName(function(err, name) {
                   
                   ++commandItr;++numComplete;
                   if(commandItr >= totalCommands) {
-                    privateClient.admin.eventsEnabled(function(err, value) {
-                      try {
-                        should.not.exist(err);
-                        should.exist(value);
-                      } catch(e) {
-                        console.error("Error doing command", 'admin.eventsEnabled');
-                        throw e;
-                      }
-                      ++numComplete;
-
-                      privateClient.admin.password(conf.private.pass, function(err, value) {
-                        try {
-                          should.not.exist(err);
-                          should.exist(value);
-                        } catch(e) {
-                          console.error("Error doing command", 'admin.password');
-                          throw e;
-                        }
-                        ++numComplete;
-
-                        privateClient.admin.help(function(err, helpCommands) {
-                          try {
-                            should.not.exist(err);
-                            should.exist(helpCommands);
-                            helpCommands.length.should.be.above(0);
-                          } catch(e) {
-                            console.error("Error doing command", 'admin.help');
-                            throw e;
-                          }
-                          ++numComplete;
-
-                          //test that everything the server recognizes is implemented here
-                          var undefMethods = [];
-                          helpCommands.forEach(function(cmd) {
-                            if(cmd.indexOf(".") >= 0) {
-                              var parts = cmd.split(".")
-                                , ns = privateClient[parts[0]];
-
-                              if(typeof ns === 'undefined') undefMethods.push(cmd);
-                              else if(typeof ns[parts[1]] === 'undefined') undefMethods.push(cmd);
-                            }
-                          });
-                          //undefMethods.should.eql([]);
-                          ++numComplete;
-
-                          numComplete.should.equal(numTests);
-                          privateClient.quit();
-                        });
-                      });
-                    });
+                    doAdminTests(privateClient);
                   }
                 });
               })(command);
@@ -194,3 +145,77 @@ privateClient.vars.serverName(function(err, name) {
     });
   });
 });
+
+function doAdminTests(privateClient) {
+  privateClient.admin.eventsEnabled(function(err, value) {
+    try {
+      should.not.exist(err);
+      should.exist(value);
+    } catch(e) {
+      console.error("Error doing command", 'admin.eventsEnabled');
+      throw e;
+    }
+    ++numComplete;
+
+    privateClient.admin.password(conf.private.pass, function(err, value) {
+      try {
+        should.not.exist(err);
+        should.exist(value);
+      } catch(e) {
+        console.error("Error doing command", 'admin.password');
+        throw e;
+      }
+      ++numComplete;
+
+      privateClient.admin.help(function(err, helpCommands) {
+        try {
+          should.not.exist(err);
+          should.exist(helpCommands);
+          helpCommands.length.should.be.above(0);
+        } catch(e) {
+          console.error("Error doing command", 'admin.help');
+          throw e;
+        }
+        ++numComplete;
+
+        //test that everything the server recognizes is implemented here
+        var undefMethods = [];
+        helpCommands.forEach(function(cmd) {
+          if(cmd.indexOf(".") >= 0) {
+            var parts = cmd.split(".")
+              , ns = privateClient[parts[0]];
+
+            if(typeof ns === 'undefined') undefMethods.push(cmd);
+            else if(typeof ns[parts[1]] === 'undefined') undefMethods.push(cmd);
+          }
+        });
+        //undefMethods.should.eql([]); //todo uncomment when we think we are done.
+        ++numComplete;
+
+        doPunkBusterTests(privateClient);
+      });
+    });
+  });
+}
+
+function doPunkBusterTests(privateClient) {
+  privateClient.punkBuster.isActive(function(err, isActive) {
+    should.not.exist(err);
+    isActive.should.be.ok;
+    ++numComplete;
+
+    privateClient.punkBuster.activate(function(err) {
+      should.not.exist(err);
+      ++numComplete;
+
+      //not sure if this does anything, but OK is returned...
+      privateClient.punkBuster.pb_sv_command("PB_SV_Ver", function(err) {
+        should.not.exist(err);
+        ++numComplete;
+
+        numComplete.should.equal(numTests);
+        privateClient.quit();
+      });
+    });
+  });
+}
