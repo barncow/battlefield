@@ -13,7 +13,8 @@ privateClient.on('close', function() {
   console.log('private client disconnected');
 });
 
-var numTests = 9, numComplete = 0;
+//9 tests, with 27 vars command tests
+var numTests = 9+27, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -109,9 +110,36 @@ privateClient.vars.serverName(function(err, name) {
           err.should.eql("LogInRequired"); //since we tried to set the name while not logged in
           ++numComplete;
 
-          numComplete.should.equal(numTests);
+          //re-login for next tests
+          privateClient.login.secure(conf.private.pass);
 
-          privateClient.quit();
+          //now we will test our other var methods. Just doing gets, to check that methods are OK and casting is correct.
+          var varCommands = Object.keys(privateClient.vars)
+            , commandItr = 0
+            , totalCommands = varCommands.length-2;
+
+          varCommands.forEach(function(command) {
+            if(command !== 'serverName' && command !== "_commands") {
+              //already thoroughly tested serverName, don't want _commands array
+              (function(command) {
+                privateClient.vars[command](function(err, value) {
+                  try {
+                    should.not.exist(err);
+                    should.exist(value);
+                  } catch(e) {
+                    console.error("Error doing command", 'vars.'+command);
+                    throw e;
+                  }
+                  
+                  ++commandItr;++numComplete;
+                  if(commandItr >= totalCommands) {
+                    numComplete.should.equal(numTests);
+                    privateClient.quit();
+                  }
+                });
+              })(command);
+            }
+          });
         });
       });
     });
