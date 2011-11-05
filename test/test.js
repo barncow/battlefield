@@ -126,6 +126,7 @@ privateClient.vars.serverName(function(err, name) {
                   try {
                     should.not.exist(err);
                     should.exist(value);
+                    //console.log('vars.'+command, value);
                   } catch(e) {
                     console.error("Error doing command", 'vars.'+command);
                     throw e;
