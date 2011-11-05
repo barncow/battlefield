@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 9 banlist
-var numTests = 9+36+13+3+9, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist
+var numTests = 9+36+13+3+10, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -268,7 +268,7 @@ function doPunkBusterTests(privateClient) {
 }
 
 function doBanListTests(privateClient) {
-  var BAN_IP = '127.0.0.1', BAN_NAME = 'asdf', BAN_GUID = '1234';
+  var BAN_IP = '127.0.0.1', BAN_NAME = 'asdf', BAN_GUID = '1234', NUM_PERMA_BANS = 3;
   privateClient.banList.save(function(err) { //have to do save first so we have somthing to load
     should.not.exist(err, 'banList save '+err);
     ++numComplete;
@@ -301,13 +301,36 @@ function doBanListTests(privateClient) {
                   should.not.exist(err, 'banlist remove guid '+err);
                   ++numComplete;
 
-                  privateClient.banList.clear(function(err) {
-                    should.not.exist(err, 'banlist clear '+err);
-                    ++numComplete;
+                  var numReturnedAdds = 0;
+                  for(var i = 0; i < NUM_PERMA_BANS; ++i) {
+                    privateClient.banList.add.name('fake'+i).perm('testing mass add', function(err) {
+                      if(err) throw err;
 
-                    numComplete.should.equal(numTests);
-                    privateClient.quit();
-                  });
+                      ++numReturnedAdds;
+
+                      if(numReturnedAdds === NUM_PERMA_BANS) {
+                        privateClient.banList.list(function(err, list) {
+                          should.not.exist(err, 'banlist list '+err);
+                          list.should.be.ok;
+                          var ban = list[0];
+                          ban.idType.should.eql('persona');
+                          ban.id.should.eql('fake0');
+                          ban.banType.should.eql('perm');
+                          ban.time.should.eql('0');
+                          ban.time.should.eql('0');
+                          ++numComplete;
+
+                          privateClient.banList.clear(function(err) {
+                            should.not.exist(err, 'banlist clear '+err);
+                            ++numComplete;
+
+                            numComplete.should.equal(numTests); //todo uncomment
+                            privateClient.quit();
+                          });
+                        });
+                      }
+                    });
+                  }
                 });
               });
             });
