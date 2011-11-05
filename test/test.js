@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 8 admin tests, 3 punkBuster
-var numTests = 9+36+8+3, numComplete = 0;
+//9 tests, with 36 vars command tests, 11 admin tests, 3 punkBuster
+var numTests = 9+36+11+3, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -208,7 +208,25 @@ function doAdminTests(privateClient) {
                 err.should.not.eql("InvalidArguments"); //since we are testing, this player probably isn't in server, and would raise a PlayerNotFound.
                 ++numComplete;
                 
-                doPunkBusterTests(privateClient);
+                privateClient.admin.listPlayers.all(function(err, info) {
+                  should.not.exist(err);
+                  should.exist(info); //would like to test that a player has a guid...
+                  ++numComplete;
+
+                  privateClient.admin.listPlayers.team(1, function(err, info) {
+                    should.not.exist(err);
+                    should.exist(info);
+                    ++numComplete;
+                    
+                    privateClient.admin.listPlayers.squad(1, 1, function(err, info) {
+                      should.not.exist(err);
+                      should.exist(info);
+                      ++numComplete;
+                        
+                      doPunkBusterTests(privateClient);
+                    });
+                  });
+                });
               });
             });
           });
