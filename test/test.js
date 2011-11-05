@@ -1,16 +1,17 @@
 var conf = require('./testconfig.json')
   , bf = require('../index')
-  , publicClient = bf.connect(conf.public.ip, conf.public.port)
-  , privateClient = bf.connect(conf.private.ip, conf.private.port, conf.private.pass)
+  , publicClient = bf.connect('BF3', conf.public.ip, conf.public.port)
+  , privateClient = bf.connect('BF3', conf.private.ip, conf.private.port, conf.private.pass)
   , should = require('should');
 
-publicClient.on('error', function(err) {console.error('PUBLICERROR', err);}); //todo if this is called, this should halt everything.
+publicClient.on('error', function(err) {console.error('PUBLICERROR', err);});
 publicClient.on('close', function() {
   console.log('public client disconnected');
 });
-privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);}); //todo if this is called, this should halt everything.
+privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);});
 privateClient.on('close', function() {
   console.log('private client disconnected');
+  console.log('completed tests:', numComplete);
 });
 
 //9 tests, with 27 vars command tests
