@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 7 admin tests, 3 punkBuster
-var numTests = 9+36+7+3, numComplete = 0;
+//9 tests, with 36 vars command tests, 8 admin tests, 3 punkBuster
+var numTests = 9+36+8+3, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -204,7 +204,12 @@ function doAdminTests(privateClient) {
               should.not.exist(err);
               ++numComplete;
               
-              doPunkBusterTests(privateClient);
+              privateClient.admin.kickPlayer('barncow', 'blah', function(err) {
+                err.should.not.eql("InvalidArguments"); //since we are testing, this player probably isn't in server, and would raise a PlayerNotFound.
+                ++numComplete;
+                
+                doPunkBusterTests(privateClient);
+              });
             });
           });
         });
