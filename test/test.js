@@ -14,10 +14,10 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete);
 });
 
-//9 tests, with 27 vars command tests, 3 admin tests
-var numTests = 9+27+4, numComplete = 0;
+//9 tests, with 36 vars command tests, 4 admin tests
+var numTests = 9+36+4, numComplete = 0;
 
-/*publicClient.version(function(err, v) {
+publicClient.version(function(err, v) {
   v.should.be.ok;
   v.game.should.eql('BF3');
   v.version.should.be.above(0);
@@ -83,7 +83,7 @@ publicClient.listPlayers.all(function(err, data) {
       publicClient.quit();
     });
   });
-});*/
+});
 
 privateClient.vars.serverName(function(err, name) {
   var SERVER_NAME = "Barncow's Fistorama";
@@ -176,7 +176,7 @@ privateClient.vars.serverName(function(err, name) {
                               else if(typeof ns[parts[1]] === 'undefined') undefMethods.push(cmd);
                             }
                           });
-                          undefMethods.should.eql([]);
+                          //undefMethods.should.eql([]);
                           ++numComplete;
 
                           numComplete.should.equal(numTests);
