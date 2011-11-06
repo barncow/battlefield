@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist
-var numTests = 9+36+13+3+10, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots
+var numTests = 9+36+13+3+10+6, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -324,8 +324,7 @@ function doBanListTests(privateClient) {
                             should.not.exist(err, 'banlist clear '+err);
                             ++numComplete;
 
-                            numComplete.should.equal(numTests); //todo uncomment
-                            privateClient.quit();
+                            reservedSlotLists(privateClient);
                           });
                         });
                       }
@@ -339,4 +338,52 @@ function doBanListTests(privateClient) {
       });
     });
   });
+
+  function reservedSlotLists(privateClient) {
+    var RESERVED_SLOT_NAME = 'barncow', NUM_RESERVED_SLOTS = 3;
+    privateClient.reservedSlotsList.save(function(err) { //have to do save first so we have somthing to load
+      should.not.exist(err, 'reservedSlotsList save '+err);
+      ++numComplete;
+
+      privateClient.reservedSlotsList.load(function(err) {
+        should.not.exist(err, 'reservedSlotsList load '+err);
+        ++numComplete;
+
+        privateClient.reservedSlotsList.add(RESERVED_SLOT_NAME, function(err) {
+          should.not.exist(err, 'reservedSlotsList add  '+err);
+          ++numComplete;
+
+          privateClient.reservedSlotsList.remove(RESERVED_SLOT_NAME, function(err) {
+            should.not.exist(err, 'reservedSlotsList remove '+err);
+            ++numComplete;
+
+            var numReturnedAdds = 0;
+            for(var i = 0; i < NUM_RESERVED_SLOTS; ++i) {
+              privateClient.reservedSlotsList.add('fake'+i, function(err) {
+                if(err) throw err;
+
+                ++numReturnedAdds;
+
+                if(numReturnedAdds === NUM_RESERVED_SLOTS) {
+                  privateClient.reservedSlotsList.list(function(err, list) {
+                    should.not.exist(err, 'reservedSlotsList list '+err);
+                    list.should.have.lengthOf(NUM_RESERVED_SLOTS);
+                    ++numComplete;
+
+                    privateClient.reservedSlotsList.clear(function(err) {
+                      should.not.exist(err, 'reservedSlotsList clear '+err);
+                      ++numComplete;
+
+                      numComplete.should.equal(numTests); //todo uncomment
+                      privateClient.quit();
+                    });
+                  });
+                }
+              });
+            }
+          });
+        });
+      });
+    });
+  }
 }
