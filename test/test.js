@@ -14,8 +14,10 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 6 gameAdminList, 12 maplist
-var numTests = 9+36+13+3+10+6+5+6+12, numComplete = 0;
+//10 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 6 gameAdminList, 12 maplist
+var numTests = 11+36+13+3+10+6+5+6+12, numComplete = 0;
+
+//untested - admin.shutDown
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -45,6 +47,18 @@ publicClient.version(function(err, v) {
 
     ++numComplete;
   });
+});
+
+publicClient.command("listPlayers all", function(err, words) {
+  should.not.exist(err);
+  words.length.should.be.above(0);
+  ++numComplete;
+});
+
+publicClient.command(["listPlayers", "all"], function(err, words) {
+  should.not.exist(err);
+  words.length.should.be.above(0);
+  ++numComplete;
 });
 
 publicClient.listPlayers.all(function(err, data) {
@@ -191,7 +205,7 @@ function doAdminTests(privateClient) {
         });
 
         //mapList.availableMaps is listed as broken
-        undefMethods.should.eql(['mapList.availableMaps']); //todo uncomment when we think we are done.//////////////////////////////////////////////////////////////////////////
+        undefMethods.should.eql(['mapList.availableMaps']);
         ++numComplete;
 
         privateClient.admin.say.all('blah', function(err) {
