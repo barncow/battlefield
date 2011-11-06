@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 12 maplist
-var numTests = 9+36+13+3+10+6+5+12, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 6 gameAdminList, 12 maplist
+var numTests = 9+36+13+3+10+6+5+6+12, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -419,12 +419,62 @@ function doBanListTests(privateClient) {
                     should.not.exist(err, 'unlockList clear '+err);
                     ++numComplete;
 
-                    mapList(privateClient);
+                    gameAdminList(privateClient);
                   });
                 });
               }
             });
           }
+        });
+      });
+    });
+  }
+
+  function gameAdminList(privateClient) {
+    var ADMIN_NAME = 'barncow', NUM_ADMINS = 3;
+    privateClient.gameAdmin.save(function(err) { //have to do save first so we have somthing to load
+      should.not.exist(err, 'gameAdmin save '+err);
+      ++numComplete;
+
+      privateClient.gameAdmin.load(function(err) {
+        should.not.exist(err, 'gameAdmin load '+err);
+        ++numComplete;
+
+        privateClient.gameAdmin.add(ADMIN_NAME, 1, function(err) {
+          should.not.exist(err, 'gameAdmin add  '+err);
+          ++numComplete;
+
+          privateClient.gameAdmin.remove(ADMIN_NAME, function(err) {
+            should.not.exist(err, 'gameAdmin remove '+err);
+            ++numComplete;
+
+            var numReturnedAdds = 0;
+            for(var i = 0; i < NUM_ADMINS; ++i) {
+              privateClient.gameAdmin.add('fake'+i, 1, function(err) {
+                if(err) throw err;
+
+                ++numReturnedAdds;
+
+                if(numReturnedAdds === NUM_ADMINS) {
+                  privateClient.gameAdmin.list(function(err, list) {
+                    should.not.exist(err, 'gameAdmin list '+err);
+                    list.should.have.lengthOf(NUM_ADMINS);
+                    var first = list[0];
+                    first.name.substr(0, 4).should.eql('fake');
+                    first.restrictionLevel.should.equal(1);
+                    ++numComplete;
+
+                    privateClient.gameAdmin.clear(function(err) {
+                      should.not.exist(err, 'gameAdmin clear '+err);
+                      ++numComplete;
+
+                      mapList(privateClient);
+                    });
+                  });
+                }
+              });
+            }
+          });
         });
       });
     });
