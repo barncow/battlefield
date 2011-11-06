@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 12 maplist
-var numTests = 9+36+13+3+10+6+12, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 12 maplist
+var numTests = 9+36+13+3+10+6+5+12, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -191,7 +191,7 @@ function doAdminTests(privateClient) {
         });
 
         //mapList.availableMaps is listed as broken
-        //undefMethods.should.eql(['mapList.availableMaps']); //todo uncomment when we think we are done.//////////////////////////////////////////////////////////////////////////
+        undefMethods.should.eql(['mapList.availableMaps']); //todo uncomment when we think we are done.//////////////////////////////////////////////////////////////////////////
         ++numComplete;
 
         privateClient.admin.say.all('blah', function(err) {
@@ -376,13 +376,55 @@ function doBanListTests(privateClient) {
                       should.not.exist(err, 'reservedSlotsList clear '+err);
                       ++numComplete;
 
-                      mapList(privateClient);
+                      unlockList(privateClient);
                     });
                   });
                 }
               });
             }
           });
+        });
+      });
+    });
+  }
+
+  function unlockList(privateClient) {
+    var UNLOCK_NAME = 'MP249', NUM_UNLOCKS = 3;
+    privateClient.unlockList.save(function(err) { //have to do save first so we have somthing to load
+      should.not.exist(err, 'unlockList save '+err);
+      ++numComplete;
+
+      privateClient.unlockList.add(UNLOCK_NAME, function(err) {
+        should.not.exist(err, 'unlockList add  '+err);
+        ++numComplete;
+
+        privateClient.unlockList.remove(UNLOCK_NAME, function(err) {
+          should.not.exist(err, 'unlockList remove '+err);
+          ++numComplete;
+
+          var numReturnedAdds = 0;
+          for(var i = 0; i < NUM_UNLOCKS; ++i) {
+            privateClient.unlockList.add('fake'+i, function(err) {
+              if(err) throw err;
+
+              ++numReturnedAdds;
+
+              if(numReturnedAdds === NUM_UNLOCKS) {
+                privateClient.unlockList.list(function(err, list) {
+                  should.not.exist(err, 'unlockList list '+err);
+                  list.should.have.lengthOf(NUM_UNLOCKS);
+                  ++numComplete;
+
+                  privateClient.unlockList.clear(function(err) {
+                    should.not.exist(err, 'unlockList clear '+err);
+                    ++numComplete;
+
+                    mapList(privateClient);
+                  });
+                });
+              }
+            });
+          }
         });
       });
     });
