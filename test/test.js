@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 9 maplist
-var numTests = 9+36+13+3+10+6+9, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 12 maplist
+var numTests = 9+36+13+3+10+6+12, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -189,7 +189,9 @@ function doAdminTests(privateClient) {
             else if(typeof ns[parts[1]] === 'undefined') undefMethods.push(cmd);
           }
         });
-        //undefMethods.should.eql([]); //todo uncomment when we think we are done.
+
+        //mapList.availableMaps is listed as broken
+        //undefMethods.should.eql(['mapList.availableMaps']); //todo uncomment when we think we are done.//////////////////////////////////////////////////////////////////////////
         ++numComplete;
 
         privateClient.admin.say.all('blah', function(err) {
@@ -430,8 +432,27 @@ function doBanListTests(privateClient) {
                       should.not.exist(err, 'mapList endRound '+err);
                       ++numComplete;
 
-                      numComplete.should.equal(numTests);
-                      privateClient.quit();
+                      privateClient.mapList.getMapIndices(function(err, indicies) {
+                        should.not.exist(err, 'mapList getMapIndices '+err);
+                        indicies.currentMapIndex.should.be.above(-1);
+                        indicies.nextMapIndex.should.be.above(-1);
+                        ++numComplete;
+
+                        privateClient.mapList.getRounds(function(err, rounds) {
+                          should.not.exist(err, 'mapList getRounds '+err);
+                          rounds.currentRound.should.be.above(-1);
+                          rounds.totalRounds.should.be.above(0);
+                          ++numComplete;
+
+                          privateClient.mapList.setNextMap('MP_Subway', 'ConquestLarge0', function(err) {
+                            should.not.exist(err, 'mapList setNextMap '+err);
+                            ++numComplete;
+
+                            numComplete.should.equal(numTests);
+                            privateClient.quit();
+                          });
+                        });
+                      });
                     });
                   });
                 });
