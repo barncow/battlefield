@@ -14,8 +14,8 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots
-var numTests = 9+36+13+3+10+6, numComplete = 0;
+//9 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 9 maplist
+var numTests = 9+36+13+3+10+6+9, numComplete = 0;
 
 publicClient.version(function(err, v) {
   v.should.be.ok;
@@ -324,7 +324,7 @@ function doBanListTests(privateClient) {
                             should.not.exist(err, 'banlist clear '+err);
                             ++numComplete;
 
-                            reservedSlotLists(privateClient);
+                            reservedSlotsList(privateClient);
                           });
                         });
                       }
@@ -339,7 +339,7 @@ function doBanListTests(privateClient) {
     });
   });
 
-  function reservedSlotLists(privateClient) {
+  function reservedSlotsList(privateClient) {
     var RESERVED_SLOT_NAME = 'barncow', NUM_RESERVED_SLOTS = 3;
     privateClient.reservedSlotsList.save(function(err) { //have to do save first so we have somthing to load
       should.not.exist(err, 'reservedSlotsList save '+err);
@@ -374,13 +374,69 @@ function doBanListTests(privateClient) {
                       should.not.exist(err, 'reservedSlotsList clear '+err);
                       ++numComplete;
 
-                      numComplete.should.equal(numTests); //todo uncomment
-                      privateClient.quit();
+                      mapList(privateClient);
                     });
                   });
                 }
               });
             }
+          });
+        });
+      });
+    });
+  }
+
+  function mapList(privateClient) {
+    //todo maplist clear
+    privateClient.mapList.save(function(err) {
+      should.not.exist(err, 'mapList save '+err);
+      ++numComplete;
+
+      privateClient.mapList.load(function(err) {
+        should.not.exist(err, 'mapList load '+err);
+        ++numComplete;
+
+        privateClient.mapList.add('MP_001', 'RushLarge0', 3, function(err) {
+          should.not.exist(err, 'mapList add '+err);
+          ++numComplete;
+
+          privateClient.mapList.remove(9, function(err) { //this will probably be the map we added just now
+            should.not.exist(err, 'mapList remove '+err);
+            ++numComplete;
+
+            privateClient.mapList.list(function(err, list) {
+              should.not.exist(err, 'mapList list '+err);
+              list.should.be.ok;
+              list.length.should.be.above(0);
+              var first = list[0];
+              first.rounds.should.be.above(0);
+              first.mapName.substr(0, 3).should.eql('MP_');
+              first.gameMode.should.eql('ConquestLarge0');
+              ++numComplete;
+
+              privateClient.mapList.setNextMapIndex(1, function(err) {
+                should.not.exist(err, 'mapList setNextMapIndex '+err);
+                ++numComplete;
+
+                privateClient.mapList.runNextRound(function(err) {
+                  should.not.exist(err, 'mapList runNextRound '+err);
+                  ++numComplete;
+
+                  privateClient.mapList.restartRound(function(err) {
+                    should.not.exist(err, 'mapList restartRound '+err);
+                    ++numComplete;
+
+                    privateClient.mapList.endRound(1, function(err) {
+                      should.not.exist(err, 'mapList endRound '+err);
+                      ++numComplete;
+
+                      numComplete.should.equal(numTests);
+                      privateClient.quit();
+                    });
+                  });
+                });
+              });
+            });
           });
         });
       });
