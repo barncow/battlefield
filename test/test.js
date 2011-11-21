@@ -5,8 +5,11 @@ var conf = require('./testconfig.json')
   , should = require('should');
 
 publicClient.on('error', function(err) {console.error('PUBLICERROR', err);publicClient.quit();});
+var publicDisconnects = 0;
 publicClient.on('close', function() {
-  console.log('public client disconnected');
+  ++publicDisconnects;
+  publicDisconnects.should.be.below(3);
+  ++numComplete;
 });
 privateClient.on('error', function(err) {console.error('PRIVATEERROR', err);privateClient.quit();});
 privateClient.on('close', function() {
@@ -14,16 +17,19 @@ privateClient.on('close', function() {
   console.log('completed tests:', numComplete, 'of', numTests);
 });
 
-//10 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 6 gameAdminList, 12 maplist
-var numTests = 11+36+13+3+10+6+5+6+12, numComplete = 0;
+//13 tests, with 36 vars command tests, 13 admin tests, 3 punkBuster, 10 banlist, 6 reservedslots, 5 unlocks, 6 gameAdminList, 12 maplist
+var numTests = 13+36+13+3+10+6+5+6+12, numComplete = 0;
 
 //untested - admin.shutDown
 
 publicClient.version(function(err, v) {
+  should.not.exist(err);
   v.should.be.ok;
   v.game.should.eql('BF3');
   v.version.should.be.above(0);
   ++numComplete;
+  publicClient.quit();
+  publicClient.connect();
 
   publicClient.serverInfo(function(err2, info) {
     info.should.be.ok;
@@ -47,118 +53,129 @@ publicClient.version(function(err, v) {
 
     ++numComplete;
   });
-});
 
-publicClient.command("listPlayers all", function(err, words) {
-  should.not.exist(err);
-  words.length.should.be.above(0);
-  ++numComplete;
-});
+  publicClient.command("listPlayers all", function(err, words) {
+    should.not.exist(err);
+    words.length.should.be.above(0);
+    ++numComplete;
+  });
 
-publicClient.command(["listPlayers", "all"], function(err, words) {
-  should.not.exist(err);
-  words.length.should.be.above(0);
-  ++numComplete;
-});
+  publicClient.command(["listPlayers", "all"], function(err, words) {
+    should.not.exist(err);
+    words.length.should.be.above(0);
+    ++numComplete;
+  });
 
-publicClient.listPlayers.all(function(err, data) {
-  if(err) return console.error('Error in listPlayers.all', err);
-
-  data.should.be.ok;
-  data.length.should.be.above(0);
-
-  var numAllPlayers = data.length;
-
-  var first = data[0];
-  first.name.should.be.ok;
-  first.guid.should.eql(''); //public listPlayers does not have guids
-  first.teamId.should.be.within(0, 16); //0 is neutral team
-  first.squadId.should.be.within(0, 8); //0 is no squad
-  first.kills.should.be.above(-1);
-  first.deaths.should.be.above(-1);
-  first.score.should.be.above(-1);
-  ++numComplete;
-
-  publicClient.listPlayers.team(1, function(err, data) {
-    if(err) return console.error('Error in listPlayers.team', err);
+  publicClient.listPlayers.all(function(err, data) {
+    if(err) return console.error('Error in listPlayers.all', err);
 
     data.should.be.ok;
-    data.length.should.be.within(0, numAllPlayers);
-    var numTeamPlayers = data.length;
-    ++numComplete;
 
-    publicClient.listPlayers.squad(1, 1, function(err, data) {
-      if(err) return console.error('Error in listPlayers.squad', err);
+    if(data.length === 0) {
+      //server is empty, skip checks.
+      console.log("SERVER IS EMPTY, SKIPPING listPlayers.all check");
+      numComplete += 3; //skip 3 listPlayers checks
+      publicClient.quit();
+    } else {
+      data.length.should.be.above(0);
 
-      data.should.be.ok;
-      data.length.should.be.within(0, numTeamPlayers);
+      var numAllPlayers = data.length;
+
+      var first = data[0];
+      first.name.should.be.ok;
+      first.guid.should.eql(''); //public listPlayers does not have guids
+      first.teamId.should.be.within(0, 16); //0 is neutral team
+      first.squadId.should.be.within(0, 8); //0 is no squad
+      first.kills.should.be.above(-1);
+      first.deaths.should.be.above(-1);
+      first.score.should.be.above(-1);
       ++numComplete;
 
-      publicClient.quit();
-    });
+      publicClient.listPlayers.team(1, function(err, data) {
+        if(err) return console.error('Error in listPlayers.team', err);
+
+        data.should.be.ok;
+        data.length.should.be.within(0, numAllPlayers);
+        var numTeamPlayers = data.length;
+        ++numComplete;
+
+        publicClient.listPlayers.squad(1, 1, function(err, data) {
+          if(err) return console.error('Error in listPlayers.squad', err);
+
+          data.should.be.ok;
+          data.length.should.be.within(0, numTeamPlayers);
+          ++numComplete;
+
+          publicClient.quit();
+        });
+      });
+    }
   });
 });
 
-privateClient.vars.serverName(function(err, name) {
-  var SERVER_NAME = "Barncow's Fistorama";
+function privateClientTests() {
+  privateClient.vars.serverName(function(err, name) {
+    var SERVER_NAME = "Barncow's Fistorama";
 
-  if(err) return console.error("serverName ERROR", err);
-  name.should.be.ok;
-  ++numComplete;
-
-  privateClient.vars.serverName(SERVER_NAME, function(err, name) {
-    if(err) return console.error("serverNameSet ERROR", err);
-    
-    should.not.exist(name); //doing a set name here, so no name is returned.
+    if(err) return console.error("serverName ERROR", err);
+    name.should.be.ok;
     ++numComplete;
 
-    privateClient.vars.serverName(function(err, name) {
-      if(err) return console.error("serverName2 ERROR", err);
+    privateClient.vars.serverName(SERVER_NAME, function(err, name) {
+      if(err) return console.error("serverNameSet ERROR", err);
       
-      name.should.eql(SERVER_NAME);
+      should.not.exist(name); //doing a set name here, so no name is returned.
       ++numComplete;
 
-      privateClient.logout(function(err) {
-        if(err) return console.error("logout ERROR", err);
+      privateClient.vars.serverName(function(err, name) {
+        if(err) return console.error("serverName2 ERROR", err);
+        
+        name.should.eql(SERVER_NAME);
+        ++numComplete;
 
-        privateClient.vars.serverName(function(err, name) {
-          err.should.eql("LogInRequired"); //since we tried to set the name while not logged in
-          ++numComplete;
+        privateClient.logout(function(err) {
+          if(err) return console.error("logout ERROR", err);
 
-          //re-login for next tests
-          privateClient.login.secure(conf.private.pass);
+          privateClient.vars.serverName(function(err, name) {
+            err.should.eql("LogInRequired"); //since we tried to set the name while not logged in
+            ++numComplete;
 
-          //now we will test our other var methods. Just doing gets, to check that methods are OK and casting is correct.
-          var varCommands = Object.keys(privateClient.vars)
-            , commandItr = 0
-            , totalCommands = varCommands.length-2;
+            //re-login for next tests
+            privateClient.login.secure(conf.private.pass);
 
-          varCommands.forEach(function(command) {
-            if(command !== 'serverName' && command !== "_commands") {
-              //already thoroughly tested serverName, don't want _commands array
-              (function(command) {
-                privateClient.vars[command](function(err, value) {
-                  try {
-                    should.not.exist(err);
-                    should.exist(value);
-                  } catch(e) {
-                    console.error("Error doing command", 'vars.'+command);
-                    throw e;
-                  }
-                  
-                  ++commandItr;++numComplete;
-                  if(commandItr >= totalCommands) {
-                    doAdminTests(privateClient);
-                  }
-                });
-              })(command);
-            }
+            //now we will test our other var methods. Just doing gets, to check that methods are OK and casting is correct.
+            var varCommands = Object.keys(privateClient.vars)
+              , commandItr = 0
+              , totalCommands = varCommands.length-2;
+
+            varCommands.forEach(function(command) {
+              if(command !== 'serverName' && command !== "_commands") {
+                //already thoroughly tested serverName, don't want _commands array
+                (function(command) {
+                  privateClient.vars[command](function(err, value) {
+                    try {
+                      should.not.exist(err);
+                      should.exist(value);
+                    } catch(e) {
+                      console.error("Error doing command", 'vars.'+command);
+                      throw e;
+                    }
+                    
+                    ++commandItr;++numComplete;
+                    if(commandItr >= totalCommands) {
+                      doAdminTests(privateClient);
+                    }
+                  });
+                })(command);
+              }
+            });
           });
         });
       });
     });
   });
-});
+};
+privateClientTests();
 
 function doAdminTests(privateClient) {
   privateClient.admin.eventsEnabled(function(err, value) {
@@ -329,7 +346,7 @@ function doBanListTests(privateClient) {
                           should.not.exist(err, 'banlist list '+err);
                           list.should.be.ok;
                           var ban = list[0];
-                          ban.idType.should.eql('persona');
+                          ban.idType.should.eql('name');
                           ban.id.should.eql('fake0');
                           ban.banType.should.eql('perm');
                           ban.time.should.eql('0');
