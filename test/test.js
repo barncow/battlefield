@@ -36,8 +36,10 @@ publicClient.version(function(err, v) {
     info.serverName.should.be.ok;
     info.currentPlayerCount.should.be.above(-1);
     info.maxPlayerCount.should.be.above(0);
+    info.currentGameModeKey.should.be.ok;
     info.currentGameMode.should.be.ok;
-    info.currentMap.should.be.ok
+    info.currentMapKey.should.be.ok;
+    info.currentMap.should.be.ok;
     info.roundsPlayed.should.be.above(-1);
     info.roundsTotal.should.be.ok;
     info.scores.should.be.ok;
