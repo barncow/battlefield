@@ -325,47 +325,55 @@ function doBanListTests(privateClient) {
             should.not.exist(err, 'banlist add guid seconds null reason '+err);
             ++numComplete;
 
-            privateClient.banList.remove.ip(BAN_IP, function(err) {
-              should.not.exist(err, 'banlist remove ip '+err);
-              ++numComplete;
+            privateClient.banList.addBan('name', 'floyd', 'seconds', 10, undefined, function(err) {
+              should.not.exist(err, 'banlist addBan '+err);
 
-              privateClient.banList.remove.name(BAN_NAME, function(err) {
-                should.not.exist(err, 'banlist remove name '+err);
-                ++numComplete;
+              privateClient.banList.removeBan('name', 'floyd', function(err) {
+                should.not.exist(err, 'banlist removeBan '+err);
 
-                privateClient.banList.remove.guid(BAN_GUID, function(err) {
-                  should.not.exist(err, 'banlist remove guid '+err);
+                privateClient.banList.remove.ip(BAN_IP, function(err) {
+                  should.not.exist(err, 'banlist remove ip '+err);
                   ++numComplete;
 
-                  var numReturnedAdds = 0;
-                  for(var i = 0; i < NUM_PERMA_BANS; ++i) {
-                    privateClient.banList.add.name('fake'+i).perm('testing mass add', function(err) {
-                      if(err) throw err;
+                  privateClient.banList.remove.name(BAN_NAME, function(err) {
+                    should.not.exist(err, 'banlist remove name '+err);
+                    ++numComplete;
 
-                      ++numReturnedAdds;
+                    privateClient.banList.remove.guid(BAN_GUID, function(err) {
+                      should.not.exist(err, 'banlist remove guid '+err);
+                      ++numComplete;
 
-                      if(numReturnedAdds === NUM_PERMA_BANS) {
-                        privateClient.banList.list(function(err, list) {
-                          should.not.exist(err, 'banlist list '+err);
-                          list.should.be.ok;
-                          var ban = list[0];
-                          ban.idType.should.eql('name');
-                          ban.id.should.eql('fake0');
-                          ban.banType.should.eql('perm');
-                          ban.time.should.eql('0');
-                          ban.time.should.eql('0');
-                          ++numComplete;
+                      var numReturnedAdds = 0;
+                      for(var i = 0; i < NUM_PERMA_BANS; ++i) {
+                        privateClient.banList.add.name('fake'+i).perm('testing mass add', function(err) {
+                          if(err) throw err;
 
-                          privateClient.banList.clear(function(err) {
-                            should.not.exist(err, 'banlist clear '+err);
-                            ++numComplete;
+                          ++numReturnedAdds;
 
-                            reservedSlotsList(privateClient);
-                          });
+                          if(numReturnedAdds === NUM_PERMA_BANS) {
+                            privateClient.banList.list(function(err, list) {
+                              should.not.exist(err, 'banlist list '+err);
+                              list.should.be.ok;
+                              var ban = list[0];
+                              ban.idType.should.eql('name');
+                              ban.id.should.eql('fake0');
+                              ban.banType.should.eql('perm');
+                              ban.time.should.eql('0');
+                              ban.time.should.eql('0');
+                              ++numComplete;
+
+                              privateClient.banList.clear(function(err) {
+                                should.not.exist(err, 'banlist clear '+err);
+                                ++numComplete;
+
+                                reservedSlotsList(privateClient);
+                              });
+                            });
+                          }
                         });
                       }
                     });
-                  }
+                  });
                 });
               });
             });
