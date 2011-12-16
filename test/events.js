@@ -1,6 +1,6 @@
 var conf = require('./testconfig.json')
   , bf = require('../index')
-  , privateClient = bf.connect('BF3', conf.private.ip, conf.private.port, conf.private.pass)
+  , privateClient = bf.connect('BF3', conf.public.ip, conf.public.port, conf.public.pass)
   , should = require('should')
   , util = require('util');
 

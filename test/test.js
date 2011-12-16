@@ -1,5 +1,6 @@
 var conf = require('./testconfig.json')
   , bf = require('../index')
+  , mvts = require('../lib/multivaluetypes.js')
   , publicClient = bf.connect('BF3', conf.public.ip, conf.public.port)
   , privateClient = bf.connect('BF3', conf.private.ip, conf.private.port, conf.private.pass)
   , should = require('should');
@@ -21,6 +22,34 @@ privateClient.on('close', function() {
 var numTests = 13+36+13+3+10+6+5+6+12, numComplete = 0;
 
 //untested - admin.shutDown
+
+publicClient._eventToJSON('player.onLeave', [ 'Barncow',
+     '7',
+     'name',
+     'guid',
+     'teamId',
+     'squadId',
+     'kills',
+     'deaths',
+     'score',
+     '1',
+     'Barncow',
+     '',
+     '1',
+     '3',
+     '0',
+     '1',
+     '0' ]).should.eql({
+        event: 'player.onLeave'
+        , player: {
+          name: 'Barncow'
+        , guid: ''
+        , teamId: 1
+        , squadId: 3
+        , kills: 0
+        , deaths: 1
+        , score: 0
+     }});
 
 publicClient.version(function(err, v) {
   should.not.exist(err);
@@ -564,7 +593,7 @@ function doBanListTests(privateClient) {
                     should.not.exist(err, 'mapList restartRound '+err);
                     ++numComplete;
 
-                    privateClient.mapList.endRound(1, function(err) {
+                    privateClient.mapList.endRound(1, function(err) { //todo keeps returning "UnableToEndRound"
                       should.not.exist(err, 'mapList endRound '+err);
                       ++numComplete;
 
@@ -580,13 +609,7 @@ function doBanListTests(privateClient) {
                           rounds.totalRounds.should.be.above(0);
                           ++numComplete;
 
-                          privateClient.mapList.setNextMap('MP_Subway', 'ConquestLarge0', function(err) {
-                            should.not.exist(err, 'mapList setNextMap '+err);
-                            ++numComplete;
-
-                            //numComplete.should.equal(numTests);
-                            privateClient.quit();
-                          });
+                          privateClient.quit();
                         });
                       });
                     });
