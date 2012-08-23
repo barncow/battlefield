@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/barncow/battlefield.png)](http://travis-ci.org/barncow/battlefield)
 # battlefield v0.1.0
 
 A library for Node.JS to connect to a Battlefield 3 (and probably other versions, like Bad Company 2) server, and perform commands.
